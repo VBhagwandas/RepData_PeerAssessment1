@@ -1,25 +1,124 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "Assignment Activity"
+author: "VBhagwandas"
+date: "24 september 2018"
+output: html_document
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
 ## Loading and preprocessing the data
+First we read the data and then we make the date a date class.
 
-
+```{r}
+activity <- read.csv("activity.csv")
+activity$date <- as.Date(activity$date ,"%Y-%m-%d")
+```
 
 ## What is mean total number of steps taken per day?
+First we calculate the total number steps in a day:
 
+```{r}
+total_steps_day <- aggregate(steps ~ date, activity, sum)
+print(total_steps_day)
+```
 
+As there are a lot of days, it might be better to represent it in a bar plot:
+
+```{r}
+library(ggplot2)
+g <- ggplot(total_steps_day, aes(date, steps)) + 
+  geom_bar(stat="identity") + 
+  labs(x = "Day") + 
+  labs(y = "Total steps")
+
+print(g)
+```
+
+The median and the mean are as follow:
+
+```{r}
+mean_steps <- mean(total_steps_day[,2], na.rm=TRUE)
+median_steps <- median(total_steps_day[,2], na.rm=TRUE)
+print(mean_steps)
+print(median_steps)
+```
 
 ## What is the average daily activity pattern?
+To calculate the average steps taken in the 5 minute interval, represented in a line plot:
 
+```{r}
+total_steps_interval <- aggregate(steps ~interval, activity, sum, na.rm=TRUE)
+f <- ggplot(total_steps_interval, aes(interval, steps)) + 
+  geom_line(stat="identity") + 
+  labs(x = "interval") + 
+  labs(y = "Total steps")
 
+print(f)
+```
+
+The maximun number of stpes in a 5 minute interval across all days is: 
+
+```{r}
+max_step_interval <- total_steps_interval[which.max(total_steps_interval[,2]),1]
+print(max_step_interval)
+```
 
 ## Imputing missing values
+First we calculate the number of missing values:
 
+```{r}
+number_NA <- sum(is.na(activity$steps))
+print(number_NA)
+```
 
+Now we will impute the missing values with the average of the steps and then we make a histogram:
+
+```{r}
+activity$stepsImp <- lapply(activity$steps, function(x)
+  if (is.na(x) == TRUE) {activity$stepsImp=round(mean(activity$steps, na.rm=TRUE))}
+  else activity$stepsImp=x)
+
+activity$stepsImp <- as.numeric(activity$stepsImp)
+
+total_steps_dayImp <- aggregate(stepsImp ~ date, activity, sum)
+
+h <- ggplot(total_steps_dayImp, aes(date, stepsImp)) + 
+  geom_bar(stat="identity") + 
+  labs(x = "Day") + 
+  labs(y = "Total steps")
+
+print(h)
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+First we will assign wether each dat belongs to a weekday or weekend:
+
+```{r}
+activity$day <- lapply(activity$date, function(x)
+  if (strftime(x, "%u") == 6 | strftime(x, "%u") == 7) 
+  {activity$day="weekend"}
+  else activity$day="weekday")
+
+activity$day <- as.factor(unlist(activity$day))
+```
+
+Then we calculate the steps splitted by interval and weekday/weekend. The results are visualized in a line plot:
+
+```{r}
+total_steps_interval2 <- aggregate(steps ~ interval + day, data=activity, sum, na.rm=TRUE)
+
+k <- ggplot(total_steps_interval2, aes(interval, steps)) + 
+  geom_line(stat="identity") + 
+  facet_grid(.~day) +
+  labs(x = "interval") + 
+  labs(y = "Total steps")
+
+print(k)
+```
+
+Here ends the assignment! 
+
+
